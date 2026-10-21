@@ -81,7 +81,7 @@ Las cuotas y errores de servicio no se eluden. Si la cuenta no tiene acceso, ha 
 | **Enter** | Enviar el prompt o confirmar la opción seleccionada |
 | **Esc** (`Fn` + `` ` ``) | Abrir Ajustes desde el chat |
 | **Ctrl + ,** | Acceso alternativo a Ajustes |
-| **`** sin Fn | Volver/salir de los menús |
+| <kbd>`</kbd> sin Fn | Volver/salir de los menús |
 | **Fn + ↑ / ↓** | Desplazarse por el historial del chat |
 | **↑ / ↓** sin Fn en menús | Mover la selección sin mantener Fn |
 | **Ctrl + L** | Vaciar el chat y el prompt cuando el chat está listo para entrada |
