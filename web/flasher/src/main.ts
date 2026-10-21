@@ -24,15 +24,16 @@ const connectButton = must<HTMLButtonElement>('connectButton');
 const disconnectButton = must<HTMLButtonElement>('disconnectButton');
 const flashButton = must<HTMLButtonElement>('flashButton');
 const safetyCheck = must<HTMLInputElement>('safetyCheck');
+const safetyLabel = must<HTMLLabelElement>('safetyLabel');
 const safetyText = must<HTMLSpanElement>('safetyText');
 const installNotice = must<HTMLParagraphElement>('installNotice');
 const installerIntro = must<HTMLParagraphElement>('installerIntro');
-const installFootnote = must<HTMLParagraphElement>('installFootnote');
 const compatibilityWarning = must<HTMLDivElement>('compatibilityWarning');
 const connectStep = must<HTMLLIElement>('connectStep');
 const reviewStep = must<HTMLLIElement>('reviewStep');
 const flashStep = must<HTMLLIElement>('flashStep');
 const statusText = must<HTMLSpanElement>('statusText');
+const statusRow = must<HTMLDivElement>('statusRow');
 const progressValue = must<HTMLElement>('progressValue');
 const progressTrack = must<HTMLDivElement>('progressTrack');
 const progressBar = must<HTMLSpanElement>('progressBar');
@@ -45,6 +46,8 @@ const confirmDialog = must<HTMLDialogElement>('confirmDialog');
 const confirmTitle = must<HTMLElement>('confirmTitle');
 const confirmText = must<HTMLElement>('confirmText');
 const confirmButton = must<HTMLButtonElement>('confirmButton');
+const firmwareInfoButton = must<HTMLButtonElement>('firmwareInfoButton');
+const firmwareInfoDialog = must<HTMLDialogElement>('firmwareInfoDialog');
 
 let transport: Transport | null = null;
 let loader: ESPLoader | null = null;
@@ -70,15 +73,24 @@ const appendLog = (message: string): void => {
   if (!normalized) return;
   terminalElement.textContent += `${normalized}\n`;
   terminalElement.scrollTop = terminalElement.scrollHeight;
+  logButton.hidden = false;
 };
 
 const terminal: IEspLoaderTerminal = {
-  clean: () => { terminalElement.textContent = ''; },
+  clean: () => {
+    terminalElement.textContent = '';
+    terminalElement.hidden = true;
+    logButton.hidden = true;
+    logButton.setAttribute('aria-expanded', 'false');
+    logButton.textContent = 'Ver registro técnico';
+  },
   writeLine: appendLog,
   write: appendLog,
 };
 
 const setProgress = (percent: number, label: string): void => {
+  statusRow.hidden = false;
+  progressTrack.hidden = false;
   const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
   statusText.textContent = label;
   progressValue.textContent = `${safePercent}%`;
@@ -88,6 +100,8 @@ const setProgress = (percent: number, label: string): void => {
 };
 
 const setIndeterminate = (label: string): void => {
+  statusRow.hidden = false;
+  progressTrack.hidden = false;
   statusText.textContent = label;
   progressValue.textContent = '···';
   progressTrack.classList.add('is-indeterminate');
@@ -104,6 +118,8 @@ const setError = (error: unknown): void => {
   } else if (/NetworkError|Failed to open serial port/i.test(raw)) {
     message = 'El puerto está ocupado. Cierra monitores serie u otras herramientas y reintenta.';
   }
+  statusRow.hidden = false;
+  progressTrack.hidden = false;
   statusText.textContent = message;
   progressValue.textContent = '!';
   progressTrack.classList.remove('is-indeterminate');
@@ -151,20 +167,24 @@ const loadFactory = async (): Promise<Uint8Array> => {
 
 const showDefaultCopy = (): void => {
   installerIntro.textContent = 'Conecta el dispositivo. Antes de mostrar la confirmación, detectaremos si debe preservarse M5Launcher.';
-  installNotice.innerHTML = '<strong>Aún no se escribirá nada.</strong><br>La conexión solo lee el chip y la tabla de particiones para elegir el modo seguro.';
-  safetyText.textContent = 'Primero conecta el Cardputer para conocer exactamente qué se conservará.';
+  installNotice.hidden = true;
+  safetyLabel.hidden = true;
+  flashButton.hidden = true;
+  statusRow.hidden = true;
+  progressTrack.hidden = true;
   flashButton.innerHTML = 'Instalar CardGPT <span aria-hidden="true">↓</span>';
-  installFootnote.innerHTML = 'Detección automática de M5Launcher + verificación MD5.<br>La web no escribe nada hasta que confirmas.';
 };
 
 const showPlan = (selected: InstallPlan): void => {
+  installNotice.hidden = false;
+  safetyLabel.hidden = false;
+  flashButton.hidden = false;
   if (selected.mode === 'launcher') {
     const verb = selected.action === 'update' ? 'actualizará' : 'creará una nueva ranura para';
     installerIntro.textContent = 'M5Launcher detectado. Se ha elegido automáticamente el modo de conservación.';
     installNotice.innerHTML = `<strong>M5Launcher y los demás firmwares se conservarán.</strong><br>La web ${verb} CardGPT en 0x${selected.target.offset.toString(16).toUpperCase()}. NVS, Wi-Fi, sesión y ajustes no se borran.`;
     safetyText.innerHTML = 'He conectado un Cardputer ADV y autorizo escribir <strong>solo CardGPT</strong> y, si es una instalación nueva, registrar su ranura. No se reemplazará otro firmware.';
     flashButton.innerHTML = `${selected.action === 'update' ? 'Actualizar' : 'Añadir'} CardGPT <span aria-hidden="true">↓</span>`;
-    installFootnote.innerHTML = 'Sin borrado completo · sin mover particiones existentes.<br>CardGPT se verifica antes de registrar una ranura nueva.';
     confirmTitle.textContent = selected.action === 'update' ? '¿Actualizar CardGPT?' : '¿Añadir CardGPT a M5Launcher?';
     confirmText.innerHTML = `<strong>Se conserva M5Launcher, NVS y el resto de firmwares.</strong> Solo se escribirá CardGPT en 0x${selected.target.offset.toString(16).toUpperCase()}${selected.tableChanged ? ' y la tabla se actualizará para registrar esa ranura' : ''}.`;
     confirmButton.textContent = selected.action === 'update' ? 'Sí, actualizar' : 'Sí, añadir';
@@ -175,7 +195,6 @@ const showPlan = (selected: InstallPlan): void => {
     installNotice.innerHTML = '<strong>Instalación limpia: se borrará toda la flash.</strong><br>Se eliminarán el firmware actual, Wi-Fi, sesión y ajustes. Este modo no se ofrece cuando se detecta M5Launcher.';
     safetyText.innerHTML = 'He conectado un Cardputer ADV, tengo copia de lo importante y acepto borrar <strong>todos los firmwares y datos</strong> para instalar CardGPT desde cero.';
     flashButton.innerHTML = 'Borrar e instalar CardGPT <span aria-hidden="true">↓</span>';
-    installFootnote.innerHTML = 'Borrado completo + imagen de arranque + verificación.<br>La descarga y las comprobaciones ocurren antes de borrar.';
     confirmTitle.textContent = '¿Borrar e instalar CardGPT?';
     confirmText.innerHTML = '<strong>Se borrará toda la flash interna:</strong> firmware actual, sesión, Wi-Fi y ajustes. Después se instalará la imagen completa de CardGPT.';
     confirmButton.textContent = 'Sí, borrar e instalar';
@@ -376,6 +395,7 @@ logButton.addEventListener('click', () => {
   logButton.setAttribute('aria-expanded', String(open));
   logButton.textContent = open ? 'Ocultar registro técnico' : 'Ver registro técnico';
 });
+firmwareInfoButton.addEventListener('click', () => firmwareInfoDialog.showModal());
 
 showDefaultCopy();
 updateControls();

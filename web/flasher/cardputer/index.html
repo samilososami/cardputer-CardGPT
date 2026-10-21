@@ -21,14 +21,9 @@
       <aside>
         <article class="firmware-summary">
           <img src="/assets/splash.png" width="240" height="135" alt="Pantalla de arranque original de CardGPT">
-          <span class="tagline">Firmware de texto · M5Stack Cardputer ADV</span><h2>CardGPT</h2>
-          <p>Conecta tu cuenta de Codex y conversa desde el teclado. Wi-Fi, modelos según tu cuenta y ajustes guardados en flash.</p>
-          <div class="meta"><div>VERSIÓN<strong>v0.2.8</strong></div><div>APP<strong>1,52 MiB · M5Launcher</strong></div><div>CHIP<strong>ESP32-S3 · 8 MB</strong></div><div>INSTALACIÓN<strong>Automática · USB</strong></div></div>
-          <div class="actions"><a class="button" data-download="application" href="/firmware/CardGPT.bin" download="CardGPT.bin">Descargar CardGPT.bin <span aria-hidden="true">↓</span></a><a class="button secondary" data-download="factory" href="/firmware/CardGPT-full.bin" download="CardGPT-full.bin">Imagen completa · 8 MiB</a></div>
-          <div class="summary-links"><a href="https://github.com/samilososami/cardputer-CardGPT/releases/tag/v0.2.8-hybrid.1">Notas de versión ↗</a><a href="/firmware/SHA256SUMS" download>SHA256SUMS ↓</a></div>
-          <div class="hash">APP SHA-256<br>5b89f2140a08ca197fda0f0f1de116e016b45e61635561bdc0bec874dc2f1067</div>
+          <div class="firmware-title"><div><h2>CardGPT</h2><p>Para Cardputer ADV, con o sin M5Launcher.</p></div><button id="firmwareInfoButton" class="info-button" type="button" aria-label="Ver información técnica de CardGPT">i</button></div>
+          <div class="actions"><a class="button" data-download="application" href="/firmware/CardGPT.bin" download="CardGPT.bin">Descargar CardGPT.bin <span aria-hidden="true">↓</span></a></div>
         </article>
-        <p class="notice">Solo Cardputer <strong>ADV</strong>. CardGPT no requiere microSD. El instalador nunca reemplaza otra app de M5Launcher para conseguir espacio.</p>
       </aside>
       <section class="install-panel" aria-labelledby="installer-title">
         <h2 id="installer-title">Instalar por USB.</h2><p id="installerIntro" class="intro">Conecta el dispositivo. Antes de mostrar la confirmación, detectaremos si debe preservarse M5Launcher.</p>
@@ -36,14 +31,13 @@
         <div id="compatibilityWarning" class="compat-warning" hidden>El USB necesita Chrome, Edge u otro Chromium de <strong>escritorio</strong> con Web Serial habilitado. La descarga del binario sigue disponible en este navegador.</div>
         <noscript><div class="compat-warning">Activa JavaScript para instalar por USB. Puedes descargar CardGPT.bin sin activarlo.</div></noscript>
         <div class="actions"><button id="connectButton" class="button light" disabled>Conectar por USB ↗</button><button id="disconnectButton" class="button subtle" hidden>Desconectar</button></div>
-        <p id="installNotice" class="notice"><strong>Aún no se escribirá nada.</strong><br>La conexión solo lee el chip y la tabla de particiones para elegir el modo seguro.</p>
-        <label class="safety"><input type="checkbox" id="safetyCheck" disabled><span id="safetyText">Primero conecta el Cardputer para conocer exactamente qué se conservará.</span></label>
-        <button id="flashButton" class="button light" disabled>Instalar CardGPT <span aria-hidden="true">↓</span></button>
-        <div class="status" role="status" aria-live="polite"><span id="statusText">Conecta tu Cardputer para empezar.</span><span id="progressValue">0%</span></div>
-        <div id="progressTrack" class="progress-track" role="progressbar" aria-label="Progreso de instalación" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><span id="progressBar"></span></div>
+        <p id="installNotice" class="notice" hidden></p>
+        <label id="safetyLabel" class="safety" hidden><input type="checkbox" id="safetyCheck" disabled><span id="safetyText"></span></label>
+        <button id="flashButton" class="button light" disabled hidden>Instalar CardGPT <span aria-hidden="true">↓</span></button>
+        <div id="statusRow" class="status" role="status" aria-live="polite" hidden><span id="statusText">Conecta tu Cardputer para empezar.</span><span id="progressValue">0%</span></div>
+        <div id="progressTrack" class="progress-track" role="progressbar" aria-label="Progreso de instalación" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" hidden><span id="progressBar"></span></div>
         <div id="resultPanel" class="result" hidden><strong id="resultTitle">CardGPT instalado y verificado.</strong><span id="resultText"> Si no reinicia automáticamente, apaga y enciende el Cardputer.</span></div>
-        <button class="log-button" id="logButton" aria-expanded="false" aria-controls="terminal">Ver registro técnico</button><pre id="terminal" hidden aria-label="Registro técnico local"></pre>
-        <p id="installFootnote" class="tiny">Detección automática de M5Launcher + verificación MD5.<br>La web no escribe nada hasta que confirmas.</p>
+        <button class="log-button" id="logButton" aria-expanded="false" aria-controls="terminal" hidden>Ver registro técnico</button><pre id="terminal" hidden aria-label="Registro técnico local"></pre>
       </section>
     </div>
   </div>
@@ -54,7 +48,7 @@
       <article class="feature"><span class="number">02</span><h3>Detecta y conserva.</h3><p>Si encuentra M5Launcher, actualiza CardGPT o crea una ranura OTA en espacio libre. No mueve, redimensiona ni borra las demás aplicaciones o NVS.</p></article>
       <article class="feature"><span class="number">03</span><h3>Instala y verifica.</h3><p>Sin M5Launcher, puedes autorizar una instalación limpia. En ambos modos se valida el binario y se comprueba lo escrito antes de reiniciar.</p></article>
     </div>
-    <div class="actions"><a class="button light" data-download="application" href="/firmware/CardGPT.bin" download="CardGPT.bin">Descargar CardGPT.bin ↓</a><a class="button subtle" href="https://github.com/samilososami/cardputer-CardGPT#instalación">Guía en GitHub ↗</a></div>
+    <div class="actions"><a class="button subtle" href="https://github.com/samilososami/cardputer-CardGPT#instalación">Guía en GitHub ↗</a></div>
   </div></section>
   <section class="section wrap split"><h2>¿No aparece<br>el puerto?</h2><div class="prose">
     <p>Comprueba que el cable transmita datos, prueba otro puerto USB y cierra otras páginas o aplicaciones que estén usando la conexión serie.</p>
@@ -72,6 +66,7 @@
   </div></section>
 </main>
 <footer class="footer wrap"><span>Hecho por Sami González Kamel · <a href="https://www.instagram.com/samilososami/">ig:samilososami</a></span><span><a href="https://github.com/samilososami/cardputer-CardGPT">Código abierto ↗</a> · Proyecto independiente.</span></footer>
+<dialog id="firmwareInfoDialog" class="dialog info-dialog"><form method="dialog"><div class="dialog-heading"><h2>Información del firmware</h2><button class="dialog-close" value="close" aria-label="Cerrar">×</button></div><dl class="firmware-details"><div><dt>Versión</dt><dd>CardGPT v0.2.8</dd></div><div><dt>Dispositivo</dt><dd>M5Stack Cardputer ADV · ESP32-S3 · 8 MB</dd></div><div><dt>CardGPT.bin</dt><dd>Aplicación para M5Launcher · 1.588.480 bytes</dd><dd class="digest">SHA-256 · 5b89f2140a08ca197fda0f0f1de116e016b45e61635561bdc0bec874dc2f1067</dd></div><div><dt>CardGPT-full.bin</dt><dd>Imagen independiente para 0x0 · 8.388.608 bytes</dd><dd class="digest">SHA-256 · 3306b8aa987912389ca848c7e517c3c7d06cef369c03ef0890a62e1d305ec9d0</dd></div></dl><div class="info-links"><a data-download="factory" href="/firmware/CardGPT-full.bin" download="CardGPT-full.bin">Descargar imagen completa ↓</a><a href="/firmware/SHA256SUMS" download>SHA256SUMS ↓</a><a href="https://github.com/samilososami/cardputer-CardGPT/releases/tag/v0.2.8-hybrid.1">Notas de versión ↗</a></div></form></dialog>
 <dialog id="confirmDialog" class="dialog"><form method="dialog"><h2 id="confirmTitle">¿Instalar CardGPT?</h2><p id="confirmText">La web mostrará aquí exactamente qué se conservará antes de escribir.</p><p>Mantén el cable conectado hasta que termine la verificación.</p><div class="actions"><button class="button secondary" value="cancel" autofocus>Cancelar</button><button id="confirmButton" class="button" value="confirm">Instalar</button></div></form></dialog>
 <script type="module" src="/src/main.ts"></script>
 </body></html>
