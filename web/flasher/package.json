@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "firmware": "node scripts/firmware.mjs",
-    "build": "npm run firmware && tsc --noEmit && vite build",
+    "build": "npm test && npm run firmware && tsc --noEmit && vite build",
     "test": "tsx --test test/*.test.ts",
     "preview": "vite preview"
   },

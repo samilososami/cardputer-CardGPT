@@ -7,8 +7,7 @@ build/
 release/*.bin
 web/flasher/public/firmware/*.bin
 *.log
-.env
-.env.*
+.env*
 backups/
 work/
 *.elf
