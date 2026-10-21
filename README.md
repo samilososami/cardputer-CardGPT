@@ -48,36 +48,37 @@ El Cardputer original y otras placas no se consideran compatibles por el mero he
 
 ### Directamente desde el navegador
 
-CardGPT se instala como un firmware completo e independiente. **No necesitas M5Launcher, ningún firmware previo ni preparar particiones.** El mismo proceso sirve para la primera instalación y para reinstalar.
+El instalador elige automáticamente entre dos rutas. **No tienes que crear ni renombrar una partición CardGPT de antemano.**
 
-> **Instalación limpia: se borra toda la flash interna.** Se eliminan el firmware anterior, cualquier launcher, otros firmwares, la sesión, las redes Wi-Fi y los ajustes. Guarda lo importante antes de continuar. Tendrás que configurar la Wi-Fi y vincular la cuenta de nuevo.
+- **Con M5Launcher compatible:** actualiza la ranura CardGPT existente o crea una partición OTA nueva en espacio libre. Conserva M5Launcher, el resto de firmwares, NVS, Wi-Fi, sesión y ajustes. Si no hay hueco, cancela sin sustituir ninguna app.
+- **Sin M5Launcher:** ofrece una instalación completa e independiente. Solo esta ruta borra toda la flash y exige una confirmación específica.
 
 1. Abre **[flasher.samilososami.com/cardputer](https://flasher.samilososami.com/cardputer/)** en Chrome, Edge u otro Chromium de escritorio con Web Serial.
 2. Conecta el **Cardputer ADV** con un cable USB de datos y cierra los monitores serie.
-3. Pulsa **Conectar por USB** y elige su puerto. La web comprueba ESP32-S3, los 8 MB de flash, las protecciones del chip y la integridad del archivo.
-4. Lee el aviso, marca la casilla y pulsa **Borrar e instalar CardGPT**. Una segunda confirmación precede al borrado.
-5. Espera a que termine la verificación sin desconectar el cable. CardGPT arrancará directamente; si el reinicio automático no funciona, apaga y enciende el equipo.
+3. Pulsa **Conectar por USB** y elige su puerto. La web comprueba ESP32-S3, 8 MB de flash, protecciones y tabla de particiones; después muestra el modo exacto que ha detectado.
+4. Lee el aviso específico, marca la casilla y confirma. Con M5Launcher solo se escribe CardGPT y, si es nuevo, su entrada de partición. Sin launcher se avisa del borrado completo.
+5. Espera a que termine la verificación sin desconectar el cable. Con M5Launcher, selecciona **CardGPT** en su lista; en modo independiente arrancará directamente.
 
-No necesitas microSD ni para instalar ni para usar CardGPT. La web no consulta ni depende de la distribución anterior de memoria. Rechaza chips con Secure Boot o cifrado configurado; no modifica eFuses ni permite forzar estas protecciones.
+No necesitas microSD ni para instalar ni para usar CardGPT. La detección es de solo lectura y no modifica nada antes de la confirmación. Rechaza chips con Secure Boot o cifrado configurado; no modifica eFuses ni permite forzar estas protecciones.
 
 **Si no aparece el puerto:** sigue el [modo descarga oficial del Cardputer ADV](https://docs.m5stack.com/en/core/Cardputer-Adv): interruptor lateral en OFF, mantén G0 antes de encender, aplica alimentación y suelta G0. Reconecta desde la web. En Linux, comprueba los permisos del puerto serie.
 
 ### Descargar e instalar con otra herramienta
 
-- **[CardGPT.bin — imagen completa](https://github.com/samilososami/cardputer-CardGPT/releases/download/v0.2.8-standalone.1/CardGPT.bin)**: 8.388.608 bytes; contiene bootloader, tabla, selector de arranque y aplicación. Dirección de escritura: **`0x0`**.
-- **[SHA256SUMS](https://github.com/samilososami/cardputer-CardGPT/releases/download/v0.2.8-standalone.1/SHA256SUMS)**: verifica el archivo antes de instalar.
-- SHA-256: `3306b8aa987912389ca848c7e517c3c7d06cef369c03ef0890a62e1d305ec9d0`.
+- **[CardGPT.bin — aplicación para M5Launcher](https://github.com/samilososami/cardputer-CardGPT/releases/download/v0.2.8-hybrid.1/CardGPT.bin)**: 1.588.480 bytes. Instálala desde M5Launcher; no se escribe en `0x0`. SHA-256: `5b89f2140a08ca197fda0f0f1de116e016b45e61635561bdc0bec874dc2f1067`.
+- **[CardGPT-full.bin — imagen independiente](https://github.com/samilososami/cardputer-CardGPT/releases/download/v0.2.8-hybrid.1/CardGPT-full.bin)**: 8.388.608 bytes para `0x0`. SHA-256: `3306b8aa987912389ca848c7e517c3c7d06cef369c03ef0890a62e1d305ec9d0`.
+- **[SHA256SUMS](https://github.com/samilososami/cardputer-CardGPT/releases/download/v0.2.8-hybrid.1/SHA256SUMS)**: comprobación de ambos formatos.
 
 Para usuarios de [esptool](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/esptool/basic-commands.html), sustituye `PUERTO` por el puerto del Cardputer. **Estos comandos borran todos los datos del dispositivo seleccionado:**
 
 ```bash
 esptool --chip esp32s3 --port PUERTO erase-flash
-esptool --chip esp32s3 --port PUERTO write-flash 0x0 CardGPT.bin
+esptool --chip esp32s3 --port PUERTO write-flash 0x0 CardGPT-full.bin
 ```
 
 No uses `--force` si esptool detecta protecciones. Si se interrumpe la escritura, entra en modo descarga y repite la instalación completa.
 
-> La release histórica `v0.2.8` contiene un archivo de aplicación de 1.588.480 bytes, **no apto para escribir en `0x0`**. Usa la publicación **`v0.2.8-standalone.1`** o el instalador actual. Son formatos diferentes aunque ambos se llamen `CardGPT.bin`.
+> `CardGPT.bin` y `CardGPT-full.bin` son formatos distintos. El primero es una aplicación para M5Launcher; el segundo es una imagen independiente para `0x0`. El instalador web descarga el correcto después de detectar el dispositivo.
 
 ## Primer arranque
 
@@ -108,7 +109,7 @@ El firmware se comunica directamente con los servicios de OpenAI mediante TLS va
 
 Las credenciales y preferencias se almacenan en NVS con envolturas AES-256-GCM. **Esto no equivale a almacenamiento seguro frente a acceso físico**: la clave se deriva de datos del dispositivo y un contexto público, sin un secreto de hardware provisionado. Quien pueda extraer la flash y conocer el dispositivo podría recuperar los datos. Revisa [SECURITY.md](SECURITY.md) antes de ceder o vender el equipo.
 
-Apagar o reiniciar conserva Wi-Fi, sesión y ajustes. **Reinstalar desde este flasher los borra**, porque el procedimiento es siempre una instalación limpia de toda la flash. El historial del chat solo permanece en RAM.
+Apagar o reiniciar conserva Wi-Fi, sesión y ajustes. Actualizar dentro de M5Launcher también conserva NVS. **Solo la ruta independiente borra estos datos**, y se muestra con un aviso y una confirmación diferentes. El historial del chat solo permanece en RAM.
 
 El contenido de tus mensajes se envía al servicio conectado y queda sujeto a sus condiciones. El flasher no incorpora analítica propia ni telemetría de conversaciones; el proveedor de alojamiento puede conservar sus registros HTTP habituales.
 
@@ -123,11 +124,11 @@ bash scripts/setup.sh
 bash scripts/build.sh
 ```
 
-El resultado es `dist/CardGPT.bin`, una **imagen completa de 8 MB para `0x0`**, y `dist/SHA256SUMS`. El empaquetado usa el esquema estándar `default_8MB` de Arduino-ESP32 y valida bootloader, aplicación, tabla, selector de arranque, checksums y zonas vacías. La imagen de aplicación intermedia de `build/` no es el archivo de instalación.
+El resultado incluye `dist/CardGPT.bin`, la aplicación para M5Launcher; `dist/CardGPT-full.bin`, la imagen completa de 8 MB para `0x0`; y `dist/SHA256SUMS`. El empaquetado independiente usa `default_8MB` de Arduino-ESP32 y valida bootloader, aplicación, tabla, selector, checksums y zonas vacías.
 
 Se fija Arduino-ESP32 **3.3.11**, M5Unified **0.2.27**, M5GFX **0.2.34** y ArduinoJson **7.4.2**. La copia de M5Cardputer utilizada está incluida en `lib/`. El bitmap de arranque ya está generado; regenerarlo requiere Pillow y qrcode, y se hace con `scripts/generate_splash.py`.
 
-La publicación `v0.2.8-standalone.1` cambia el **paquete de instalación**, no la aplicación ni su estética: conserva dentro, byte a byte, la aplicación v0.2.8 aprobada en el dispositivo. Una compilación local puede diferir por marcas de tiempo, rutas y herramientas. El formato completo y el flujo USB cuentan con validación offline y pruebas automatizadas; este cambio no se ha probado mediante un nuevo flasheo físico.
+La publicación `v0.2.8-standalone.1` cambia el **paquete independiente**, no la aplicación ni su estética: contiene byte a byte la aplicación v0.2.8 aprobada. El flasher híbrido valida ambos formatos y prueba que el modo M5Launcher no escribe fuera de CardGPT y del sector de tabla. Estas pruebas automatizadas no sustituyen una prueba física de cada layout.
 
 ## Ejecutar el flasher localmente
 
@@ -138,7 +139,7 @@ npm run firmware
 npm run dev -- --host 127.0.0.1
 ```
 
-`npm run firmware` descarga únicamente el asset público de la release y verifica su SHA-256. No carga credenciales. Para producción: `npm test && npm run build`; la salida está en `web/flasher/dist/`. Web Serial necesita HTTPS o `localhost`.
+`npm run firmware` descarga los dos assets públicos fijados y verifica sus SHA-256. No carga credenciales. Para producción: `npm run build`; la salida está en `web/flasher/dist/`. Web Serial necesita HTTPS o `localhost`.
 
 ## Estructura
 

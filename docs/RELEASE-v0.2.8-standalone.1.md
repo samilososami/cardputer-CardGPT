@@ -2,6 +2,8 @@
 
 **Una imagen, un cable y CardGPT.** Este paquete permite instalar el firmware directamente por USB en el M5Stack Cardputer ADV, sin M5Launcher, sin firmware previo y sin preparar particiones.
 
+> Este es el paquete **independiente opcional**. El instalador web actual preserva M5Launcher cuando lo detecta y solo ofrece esta ruta limpia cuando no hay un launcher compatible.
+
 ## Qué cambia
 
 - `CardGPT.bin` es ahora una **imagen completa de 8 MB para escribir en `0x0`**, con bootloader, tabla, selector de arranque y aplicación.
