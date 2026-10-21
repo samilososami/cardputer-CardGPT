@@ -1,0 +1,16 @@
+.arduino/
+.venv/
+.vercel/
+node_modules/
+dist/
+build/
+release/*.bin
+web/flasher/public/firmware/*.bin
+*.log
+.env
+.env.*
+backups/
+work/
+*.elf
+*.map
+__pycache__/

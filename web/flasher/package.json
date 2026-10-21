@@ -1,0 +1,19 @@
+{
+  "name": "samilososami-flasher",
+  "version": "0.2.8",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "vite",
+    "firmware": "node scripts/firmware.mjs",
+    "build": "npm run firmware && tsc --noEmit && vite build",
+    "test": "tsx --test test/*.test.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": { "esptool-js": "0.6.0", "spark-md5": "3.0.2" },
+  "devDependencies": {
+    "@types/spark-md5": "3.0.5", "@types/w3c-web-serial": "1.0.8",
+    "@types/node": "^22.0.0", "typescript": "^5.7.0", "vite": "^6.0.0", "tsx": "^4.20.0"
+  }
+}
