@@ -6,8 +6,8 @@
   "engines": { "node": ">=22" },
   "scripts": {
     "dev": "vite",
-    "firmware": "node scripts/firmware.mjs",
-    "build": "npm test && npm run firmware && tsc --noEmit && vite build",
+    "firmware": "tsx scripts/firmware.ts",
+    "build": "npm run firmware && npm test && tsc --noEmit && vite build",
     "test": "tsx --test test/*.test.ts",
     "preview": "vite preview"
   },

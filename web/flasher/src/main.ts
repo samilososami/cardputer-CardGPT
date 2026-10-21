@@ -1,10 +1,6 @@
 import { ESPLoader, Transport, type IEspLoaderTerminal } from 'esptool-js';
-import SparkMD5 from 'spark-md5';
-import { findCardGPTPartition, FIRMWARE_SIZE, type Partition } from './partitions';
-
-const FIRMWARE_URL = '/firmware/CardGPT.bin';
-const FIRMWARE_NAME = 'CardGPT.bin';
-const FIRMWARE_SHA256 = '5b89f2140a08ca197fda0f0f1de116e016b45e61635561bdc0bec874dc2f1067';
+import { FIRMWARE_URL, manifest, validateFirmware } from './firmware.ts';
+import { assertCompatibleDevice, installFactoryImage } from './installer.ts';
 
 const must = <T extends HTMLElement>(id: string): T => {
   const element = document.getElementById(id);
@@ -34,12 +30,11 @@ let loader: ESPLoader | null = null;
 let connected = false;
 let busy = false;
 let firmwareCache: Uint8Array | null = null;
-let destination: Partition | null = null;
 const serialAvailable = 'serial' in navigator && window.isSecureContext && !/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
 document.querySelectorAll<HTMLAnchorElement>('[data-download]').forEach((link) => {
   link.href = FIRMWARE_URL;
-  link.download = FIRMWARE_NAME;
+  link.download = manifest.filename;
 });
 
 const appendLog = (message: string): void => {
@@ -89,7 +84,7 @@ const setError = (error: unknown): void => {
 };
 
 const updateControls = (): void => {
-  const canFlash = connected && destination !== null && safetyCheck.checked && !busy;
+  const canFlash = connected && loader !== null && safetyCheck.checked && !busy;
   flashButton.disabled = !canFlash;
   connectButton.disabled = busy || connected || !serialAvailable;
   safetyCheck.disabled = busy;
@@ -102,37 +97,21 @@ const setBusy = (value: boolean): void => {
   updateControls();
 };
 
-const sha256 = async (data: Uint8Array): Promise<string> => {
-  const copy = data.slice().buffer;
-  const digest = await crypto.subtle.digest('SHA-256', copy);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
-};
-
 const loadAndValidateFirmware = async (): Promise<Uint8Array> => {
   if (firmwareCache) return firmwareCache;
   setIndeterminate('Descargando y validando el firmware…');
   const response = await fetch(FIRMWARE_URL, { cache: 'no-store' });
   if (!response.ok) throw new Error(`No se pudo descargar el firmware (${response.status}).`);
   const firmware = new Uint8Array(await response.arrayBuffer());
-  if (firmware.length !== FIRMWARE_SIZE) {
-    throw new Error(`Tamaño inesperado: ${firmware.length} bytes.`);
-  }
-  if (firmware[0] !== 0xe9) {
-    throw new Error('El archivo no contiene una imagen ESP válida.');
-  }
-  const digest = await sha256(firmware);
-  if (digest !== FIRMWARE_SHA256) {
-    throw new Error('El SHA-256 del firmware no coincide con la versión verificada.');
-  }
-  appendLog(`Firmware validado: ${firmware.length} bytes`);
-  appendLog(`SHA-256: ${digest}`);
+  await validateFirmware(firmware);
+  appendLog(`Imagen completa validada: ${firmware.length} bytes`);
+  appendLog(`SHA-256: ${manifest.sha256}`);
   firmwareCache = firmware;
   return firmware;
 };
 
 const resetConnectionUi = (): void => {
   connected = false;
-  destination = null;
   loader = null;
   transport = null;
   connectStep.classList.remove('is-complete');
@@ -180,20 +159,17 @@ const connectDevice = async (): Promise<void> => {
     if (!/ESP32-S3/i.test(chipName)) {
       throw new Error(`Dispositivo incompatible: ${chipName || 'chip desconocido'}. Se requiere ESP32-S3.`);
     }
-    const detectedFlash = await loader.detectFlashSize();
-    if (detectedFlash !== '8MB') {
-      throw new Error(`Flash incompatible: ${detectedFlash}. Se requieren 8 MB.`);
-    }
-    setIndeterminate('Comprobando las particiones del dispositivo…');
-    destination = findCardGPTPartition(await loader.readFlash(0x8000, 0xc00));
+    setIndeterminate('Comprobando memoria y seguridad del dispositivo…');
+    await assertCompatibleDevice(loader);
+    await loadAndValidateFirmware();
     connected = true;
     connectStep.classList.remove('is-current');
     connectStep.classList.add('is-complete');
     reviewStep.classList.add('is-current');
     connectButton.textContent = 'ESP32-S3 conectado';
-    setProgress(0, `CardGPT compatible: 0x${destination.offset.toString(16)} · ${(destination.size / 1024).toFixed(0)} KiB`);
-    appendLog(`Destino verificado: ${destination.label} en 0x${destination.offset.toString(16).toUpperCase()}`);
-    appendLog('Borrado completo: desactivado');
+    setProgress(0, 'ESP32-S3 · 8 MB. Revisa el aviso de borrado para continuar.');
+    appendLog('Instalación completa en 0x0. No se requiere ningún firmware previo.');
+    appendLog('Se borrará toda la flash, incluidas Wi-Fi, sesión y preferencias.');
   } catch (error) {
     if (transport) {
       try { await transport.disconnect(); } catch { /* No hay nada más que cerrar. */ }
@@ -216,7 +192,7 @@ const askForConfirmation = (): Promise<boolean> => new Promise((resolve) => {
 });
 
 const flashFirmware = async (): Promise<void> => {
-  if (!loader || !transport || !destination || !connected || !safetyCheck.checked || busy) return;
+  if (!loader || !transport || !connected || !safetyCheck.checked || busy) return;
   setBusy(true);
   if (!(await askForConfirmation())) { setBusy(false); return; }
   resultPanel.hidden = true;
@@ -226,30 +202,21 @@ const flashFirmware = async (): Promise<void> => {
   window.addEventListener('beforeunload', preventNavigation);
   try {
     const firmware = await loadAndValidateFirmware();
-    const verified = findCardGPTPartition(await loader.readFlash(0x8000, 0xc00));
-    if (verified.offset !== destination.offset || verified.size !== destination.size) {
-      throw new Error('La tabla de particiones ha cambiado. Desconecta y vuelve a comprobar el dispositivo.');
-    }
-    setProgress(0, 'Escribiendo CardGPT…');
-    await loader.writeFlash({
-      fileArray: [{ data: firmware, address: destination.offset }],
-      flashMode: 'keep',
-      flashFreq: 'keep',
-      flashSize: 'keep',
-      eraseAll: false,
-      compress: true,
-      reportProgress: (_fileIndex, written, total) => {
-        setProgress((written / total) * 100, 'Escribiendo y verificando…');
-      },
-      calculateMD5Hash: (image) => SparkMD5.ArrayBuffer.hash(image.slice().buffer),
-    });
-    setIndeterminate('Verificando los bytes escritos…');
-    const deviceMd5 = await loader.flashMd5sum(destination.offset, firmware.length);
-    const expectedMd5 = SparkMD5.ArrayBuffer.hash(firmware.slice().buffer);
-    if (deviceMd5.toLowerCase() !== expectedMd5) throw new Error('La verificación final no coincide. No se declara instalada la aplicación; repite el proceso.');
+    await installFactoryImage(loader, firmware, phase => {
+      const labels = {
+        validating: 'Validando la imagen y el dispositivo antes del borrado…',
+        erasing: 'Borrando toda la flash. No desconectes el cable…',
+        writing: 'Instalando CardGPT completo…',
+        verifying: 'Verificando los 8 MB escritos…',
+      };
+      setIndeterminate(labels[phase]);
+      appendLog(labels[phase]);
+    }, percent => setProgress(percent, 'Instalando CardGPT completo…'));
     setIndeterminate('Reiniciando el Cardputer…');
-    await loader.after('hard_reset');
-    setProgress(100, 'Instalación verificada');
+    let restarted = true;
+    try { await loader.after('hard_reset'); }
+    catch { restarted = false; appendLog('Imagen verificada. Apaga y enciende el dispositivo manualmente.'); }
+    setProgress(100, restarted ? 'Instalación verificada. Configura la Wi-Fi y vincula tu cuenta.' : 'Instalación verificada. Apaga y enciende el Cardputer.');
     flashStep.classList.remove('is-current');
     flashStep.classList.add('is-complete');
     resultPanel.hidden = false;
@@ -258,13 +225,15 @@ const flashFirmware = async (): Promise<void> => {
     try { await transport.disconnect(); } catch { /* Reiniciar puede cerrar el puerto primero. */ }
     loader = null;
     transport = null;
-    destination = null;
     connectButton.textContent = 'Conectar por USB';
     safetyCheck.checked = false;
   } catch (error) {
-    flashStep.classList.remove('is-current');
-    reviewStep.classList.add('is-current');
+    if (transport) {
+      try { await transport.disconnect(); } catch { /* Puede haberse perdido el USB. */ }
+    }
+    resetConnectionUi();
     setError(error);
+    appendLog('Si el borrado llegó a iniciarse, reconecta en modo descarga y repite la instalación completa.');
   } finally {
     window.removeEventListener('beforeunload', preventNavigation);
     setBusy(false);

@@ -1,0 +1,14 @@
+{
+  "name": "CardGPT",
+  "version": "0.2.8",
+  "release": "v0.2.8-standalone.1",
+  "filename": "CardGPT.bin",
+  "format": "factory",
+  "chip": "ESP32-S3",
+  "offset": 0,
+  "size": 8388608,
+  "sha256": "3306b8aa987912389ca848c7e517c3c7d06cef369c03ef0890a62e1d305ec9d0",
+  "applicationOffset": 65536,
+  "applicationSize": 1588480,
+  "applicationSha256": "5b89f2140a08ca197fda0f0f1de116e016b45e61635561bdc0bec874dc2f1067"
+}

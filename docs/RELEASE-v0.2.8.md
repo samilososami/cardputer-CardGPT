@@ -1,5 +1,7 @@
 # CardGPT v0.2.8
 
+> **Publicación histórica: solo aplicación.** Para una instalación completa por USB usa [v0.2.8-standalone.1](https://github.com/samilososami/cardputer-CardGPT/releases/tag/v0.2.8-standalone.1). El archivo de esta release no sirve para escribir en `0x0`. Se conserva sin cambios para mantener su integridad y procedencia.
+
 Primera publicación pública del firmware de texto para **M5Stack Cardputer ADV**.
 
 ## Incluido
@@ -21,6 +23,6 @@ Es el mismo binario v0.2.8 probado y aprobado en el dispositivo, renombrado para
 
 [Instalador y descarga](https://flasher.samilososami.com/cardputer/) · [Guía completa](https://samilososami.com/tools/cardputer/cardgpt/)
 
-La actualización USB directa requiere una partición CardGPT existente y compatible. Para una primera instalación utiliza M5Launcher. El instalador público incorpora comprobaciones adicionales; no se ha validado en este lanzamiento mediante un nuevo flasheo físico desde la web.
+El instalador que acompañó originalmente esta release era un actualizador de aplicaciones existentes. El instalador público actual utiliza el nuevo paquete completo y borra toda la flash. Usa la publicación enlazada arriba para las instrucciones vigentes.
 
 Proyecto independiente, no afiliado a OpenAI, ChatGPT ni M5Stack. Acceso, modelos y cuota sujetos a la cuenta y al servicio.
