@@ -259,6 +259,8 @@ const flashFirmware = async (): Promise<void> => {
     loader = null;
     transport = null;
     destination = null;
+    connectButton.textContent = 'Conectar por USB';
+    safetyCheck.checked = false;
   } catch (error) {
     flashStep.classList.remove('is-current');
     reviewStep.classList.add('is-current');
